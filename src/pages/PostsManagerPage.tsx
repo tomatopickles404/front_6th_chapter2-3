@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Edit2, MessageSquare, Plus, Search, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react"
 import { usePostsParams } from "features/post"
+import { useDialog } from "shared/hooks"
 import {
   Button,
   Card,
@@ -45,14 +46,14 @@ export default function PostsManager() {
   const [selectedComment, setSelectedComment] = useState(null)
   const [newComment, setNewComment] = useState({ body: "", postId: null, userId: 1 })
 
-  const [showAddDialog, setShowAddDialog] = useState(false)
-  const [showEditDialog, setShowEditDialog] = useState(false)
+  const { isOpen: showAddDialog, toggleDialog: toggleShowAddDialog } = useDialog()
+  const { isOpen: showEditDialog, toggleDialog: toggleShowEditDialog } = useDialog()
 
-  const [showAddCommentDialog, setShowAddCommentDialog] = useState(false)
-  const [showEditCommentDialog, setShowEditCommentDialog] = useState(false)
-  const [showPostDetailDialog, setShowPostDetailDialog] = useState(false)
+  const { isOpen: showAddCommentDialog, toggleDialog: toggleShowAddCommentDialog } = useDialog()
+  const { isOpen: showEditCommentDialog, toggleDialog: toggleShowEditCommentDialog } = useDialog()
+  const { isOpen: showPostDetailDialog, toggleDialog: toggleShowPostDetailDialog } = useDialog()
 
-  const [showUserModal, setShowUserModal] = useState(false)
+  const { isOpen: showUserModal, toggleDialog: toggleShowUserModal } = useDialog()
   const [selectedUser, setSelectedUser] = useState(null)
 
   // 게시물 가져오기
@@ -152,7 +153,7 @@ export default function PostsManager() {
       })
       const data = await response.json()
       setPosts([data, ...posts])
-      setShowAddDialog(false)
+      toggleShowAddDialog()
       setNewPost({ title: "", body: "", userId: 1 })
     } catch (error) {
       console.error("게시물 추가 오류:", error)
@@ -169,7 +170,7 @@ export default function PostsManager() {
       })
       const data = await response.json()
       setPosts(posts.map((post) => (post.id === data.id ? data : post)))
-      setShowEditDialog(false)
+      toggleShowEditDialog()
     } catch (error) {
       console.error("게시물 업데이트 오류:", error)
     }
@@ -212,7 +213,7 @@ export default function PostsManager() {
         ...prev,
         [data.postId]: [...(prev[data.postId] || []), data],
       }))
-      setShowAddCommentDialog(false)
+      toggleShowAddCommentDialog()
       setNewComment({ body: "", postId: null, userId: 1 })
     } catch (error) {
       console.error("댓글 추가 오류:", error)
@@ -232,7 +233,7 @@ export default function PostsManager() {
         ...prev,
         [data.postId]: prev[data.postId].map((comment) => (comment.id === data.id ? data : comment)),
       }))
-      setShowEditCommentDialog(false)
+      toggleShowEditCommentDialog()
     } catch (error) {
       console.error("댓글 업데이트 오류:", error)
     }
@@ -277,7 +278,7 @@ export default function PostsManager() {
   const openPostDetail = (post) => {
     setSelectedPost(post)
     fetchComments(post.id)
-    setShowPostDetailDialog(true)
+    toggleShowPostDetailDialog()
   }
 
   // 사용자 모달 열기
@@ -286,7 +287,7 @@ export default function PostsManager() {
       const response = await fetch(`/api/users/${user.id}`)
       const userData = await response.json()
       setSelectedUser(userData)
-      setShowUserModal(true)
+      toggleShowUserModal()
     } catch (error) {
       console.error("사용자 정보 가져오기 오류:", error)
     }
@@ -382,7 +383,7 @@ export default function PostsManager() {
                   size="sm"
                   onClick={() => {
                     setSelectedPost(post)
-                    setShowEditDialog(true)
+                    toggleShowEditDialog()
                   }}
                 >
                   <Edit2 className="w-4 h-4" />
@@ -407,7 +408,7 @@ export default function PostsManager() {
           size="sm"
           onClick={() => {
             setNewComment((prev) => ({ ...prev, postId }))
-            setShowAddCommentDialog(true)
+            toggleShowAddCommentDialog()
           }}
         >
           <Plus className="w-3 h-3 mr-1" />
@@ -431,7 +432,7 @@ export default function PostsManager() {
                 size="sm"
                 onClick={() => {
                   setSelectedComment(comment)
-                  setShowEditCommentDialog(true)
+                  toggleShowEditCommentDialog()
                 }}
               >
                 <Edit2 className="w-3 h-3" />
@@ -451,7 +452,7 @@ export default function PostsManager() {
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>게시물 관리자</span>
-          <Button onClick={() => setShowAddDialog(true)}>
+          <Button onClick={() => toggleShowAddDialog()}>
             <Plus className="w-4 h-4 mr-2" />
             게시물 추가
           </Button>
@@ -546,7 +547,7 @@ export default function PostsManager() {
       </CardContent>
 
       {/* 게시물 추가 대화상자 */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+      <Dialog open={showAddDialog} onOpenChange={toggleShowAddDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>새 게시물 추가</DialogTitle>
@@ -575,7 +576,7 @@ export default function PostsManager() {
       </Dialog>
 
       {/* 게시물 수정 대화상자 */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+      <Dialog open={showEditDialog} onOpenChange={toggleShowEditDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>게시물 수정</DialogTitle>
@@ -598,7 +599,7 @@ export default function PostsManager() {
       </Dialog>
 
       {/* 댓글 추가 대화상자 */}
-      <Dialog open={showAddCommentDialog} onOpenChange={setShowAddCommentDialog}>
+      <Dialog open={showAddCommentDialog} onOpenChange={toggleShowAddCommentDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>새 댓글 추가</DialogTitle>
@@ -615,7 +616,7 @@ export default function PostsManager() {
       </Dialog>
 
       {/* 댓글 수정 대화상자 */}
-      <Dialog open={showEditCommentDialog} onOpenChange={setShowEditCommentDialog}>
+      <Dialog open={showEditCommentDialog} onOpenChange={toggleShowEditCommentDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>댓글 수정</DialogTitle>
@@ -632,7 +633,7 @@ export default function PostsManager() {
       </Dialog>
 
       {/* 게시물 상세 보기 대화상자 */}
-      <Dialog open={showPostDetailDialog} onOpenChange={setShowPostDetailDialog}>
+      <Dialog open={showPostDetailDialog} onOpenChange={toggleShowPostDetailDialog}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
             <DialogTitle>{highlightText(selectedPost?.title, search)}</DialogTitle>
@@ -645,7 +646,7 @@ export default function PostsManager() {
       </Dialog>
 
       {/* 사용자 모달 */}
-      <Dialog open={showUserModal} onOpenChange={setShowUserModal}>
+      <Dialog open={showUserModal} onOpenChange={toggleShowUserModal}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>사용자 정보</DialogTitle>
