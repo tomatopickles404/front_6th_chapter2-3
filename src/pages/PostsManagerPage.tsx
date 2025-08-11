@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react"
 import { Edit2, MessageSquare, Plus, Search, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react"
 import { usePostsParams } from "features/post"
+import { fetchTags } from "features/tag"
+import { fetchUser } from "features/user"
+import { Tag } from "entities/tag"
+import { User } from "entities/user"
 import { useDialog } from "shared/hooks"
 import {
   Button,
@@ -32,7 +36,6 @@ export default function PostsManager() {
   const { skip, limit, search, sortBy, sortOrder, tag: selectedTag } = params
 
   // 상태 관리
-  const [posts, setPosts] = useState([])
   const [total, setTotal] = useState(0)
 
   const [loading, setLoading] = useState(false)
@@ -40,7 +43,7 @@ export default function PostsManager() {
   const [selectedPost, setSelectedPost] = useState(null)
   const [newPost, setNewPost] = useState({ title: "", body: "", userId: 1 })
 
-  const [tags, setTags] = useState([])
+  const [tags, setTags] = useState<Tag[]>([])
 
   const [comments, setComments] = useState({})
   const [selectedComment, setSelectedComment] = useState(null)
@@ -54,10 +57,13 @@ export default function PostsManager() {
   const { isOpen: showPostDetailDialog, toggleDialog: toggleShowPostDetailDialog } = useDialog()
 
   const { isOpen: showUserModal, toggleDialog: toggleShowUserModal } = useDialog()
-  const [selectedUser, setSelectedUser] = useState(null)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+
+  // posts
+  const [posts, setPosts] = useState([])
 
   // 게시물 가져오기
-  const fetchPosts = () => {
+  const getPosts = () => {
     setLoading(true)
     let postsData
     let usersData
@@ -86,21 +92,10 @@ export default function PostsManager() {
       })
   }
 
-  // 태그 가져오기
-  const fetchTags = async () => {
-    try {
-      const response = await fetch("/api/posts/tags")
-      const data = await response.json()
-      setTags(data)
-    } catch (error) {
-      console.error("태그 가져오기 오류:", error)
-    }
-  }
-
   // 게시물 검색
   const searchPosts = async () => {
     if (!search) {
-      fetchPosts()
+      getPosts()
       return
     }
     setLoading(true)
@@ -111,34 +106,6 @@ export default function PostsManager() {
       setTotal(data.total)
     } catch (error) {
       console.error("게시물 검색 오류:", error)
-    }
-    setLoading(false)
-  }
-
-  // 태그별 게시물 가져오기
-  const fetchPostsByTag = async (tag) => {
-    if (!tag || tag === "all") {
-      fetchPosts()
-      return
-    }
-    setLoading(true)
-    try {
-      const [postsResponse, usersResponse] = await Promise.all([
-        fetch(`/api/posts/tag/${tag}`),
-        fetch("/api/users?limit=0&select=username,image"),
-      ])
-      const postsData = await postsResponse.json()
-      const usersData = await usersResponse.json()
-
-      const postsWithUsers = postsData.posts.map((post) => ({
-        ...post,
-        author: usersData.users.find((user) => user.id === post.userId),
-      }))
-
-      setPosts(postsWithUsers)
-      setTotal(postsData.total)
-    } catch (error) {
-      console.error("태그별 게시물 가져오기 오류:", error)
     }
     setLoading(false)
   }
@@ -188,6 +155,49 @@ export default function PostsManager() {
     }
   }
 
+  // 게시물 상세 보기
+  const openPostDetail = (post) => {
+    setSelectedPost(post)
+    fetchComments(post.id)
+    toggleShowPostDetailDialog()
+  }
+
+  // tag
+  // 태그별 게시물 가져오기
+  const getPostsByTag = async (tag) => {
+    if (!tag || tag === "all") {
+      getPosts()
+      return
+    }
+    setLoading(true)
+    try {
+      const [postsResponse, usersResponse] = await Promise.all([
+        fetch(`/api/posts/tag/${tag}`),
+        fetch("/api/users?limit=0&select=username,image"),
+      ])
+      const postsData = await postsResponse.json()
+      const usersData = await usersResponse.json()
+
+      const postsWithUsers = postsData.posts.map((post) => ({
+        ...post,
+        author: usersData.users.find((user) => user.id === post.userId),
+      }))
+
+      setPosts(postsWithUsers)
+      setTotal(postsData.total)
+    } catch (error) {
+      console.error("태그별 게시물 가져오기 오류:", error)
+    }
+    setLoading(false)
+  }
+
+  // 태그 가져오기
+  const getTags = async () => {
+    const response = await fetchTags()
+    setTags(response)
+  }
+
+  // comment
   // 댓글 가져오기
   const fetchComments = async (postId) => {
     if (comments[postId]) return // 이미 불러온 댓글이 있으면 다시 불러오지 않음
@@ -240,7 +250,7 @@ export default function PostsManager() {
   }
 
   // 댓글 삭제
-  const deleteComment = async (id, postId) => {
+  const deleteComment = async (id: number, postId: number) => {
     try {
       await fetch(`/api/comments/${id}`, {
         method: "DELETE",
@@ -255,7 +265,7 @@ export default function PostsManager() {
   }
 
   // 댓글 좋아요
-  const likeComment = async (id, postId) => {
+  const likeComment = async (id: number, postId: number) => {
     try {
       const response = await fetch(`/api/comments/${id}`, {
         method: "PATCH",
@@ -274,34 +284,23 @@ export default function PostsManager() {
     }
   }
 
-  // 게시물 상세 보기
-  const openPostDetail = (post) => {
-    setSelectedPost(post)
-    fetchComments(post.id)
-    toggleShowPostDetailDialog()
-  }
-
   // 사용자 모달 열기
-  const openUserModal = async (user) => {
-    try {
-      const response = await fetch(`/api/users/${user.id}`)
-      const userData = await response.json()
-      setSelectedUser(userData)
-      toggleShowUserModal()
-    } catch (error) {
-      console.error("사용자 정보 가져오기 오류:", error)
-    }
+  const openUserModal = async (userId: number) => {
+    // TODO: 페이지에서 받기
+    const response = await fetchUser(userId)
+    setSelectedUser(response)
+    toggleShowUserModal()
   }
 
   useEffect(() => {
-    fetchTags()
+    getTags()
   }, [])
 
   useEffect(() => {
     if (selectedTag) {
-      fetchPostsByTag(selectedTag)
+      getPostsByTag(selectedTag)
     } else {
-      fetchPosts()
+      getPosts()
     }
   }, [selectedTag, skip, limit, search, sortBy, sortOrder])
 
@@ -360,7 +359,10 @@ export default function PostsManager() {
               </div>
             </TableCell>
             <TableCell>
-              <div className="flex items-center space-x-2 cursor-pointer" onClick={() => openUserModal(post.author)}>
+              <div
+                className="flex items-center space-x-2 cursor-pointer"
+                onClick={() => openUserModal(post.author?.id)}
+              >
                 <img src={post.author?.image} alt={post.author?.username} className="w-8 h-8 rounded-full" />
                 <span>{post.author?.username}</span>
               </div>
@@ -478,7 +480,7 @@ export default function PostsManager() {
               value={selectedTag}
               onValueChange={(value) => {
                 updateParams({ tag: value })
-                fetchPostsByTag(value)
+                getPostsByTag(value)
               }}
             >
               <SelectTrigger className="w-[180px]">
