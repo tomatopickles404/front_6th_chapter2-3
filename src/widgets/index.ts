@@ -1,2 +1,3 @@
-export * from "./Header"
-export * from "./Footer"
+export * from "./header"
+export * from "./footer"
+export * from "./layouts"
