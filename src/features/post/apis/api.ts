@@ -1,11 +1,11 @@
 import { api, httpClient } from "shared/utils/http"
 import { PostsParams } from "../models"
-import { API_PATH } from "entities/post"
+import { POST_API_PATH } from "entities/post"
 
 const getEndpoint = (search: string | undefined, tag: string | undefined) => {
-  if (search) return API_PATH.POSTS_SEARCH
-  if (tag && tag !== "all") return API_PATH.POSTS_TAG
-  return API_PATH.POSTS
+  if (search) return POST_API_PATH.search
+  if (tag && tag !== "all") return POST_API_PATH.tag
+  return POST_API_PATH.posts
 }
 
 const getQueryParams = (search: string | undefined, restParams: Partial<PostsParams>) => {
@@ -27,13 +27,13 @@ export const fetchPosts = async (params: Partial<PostsParams> = {}) => {
 
 // 게시물 CRUD
 export const createPost = async (post: { title: string; body: string; userId: number }) => {
-  return api.post(API_PATH.POSTS, post)
+  return api.post(POST_API_PATH.posts, post)
 }
 
 export const updatePost = async (id: number, post: { title: string; body: string }) => {
-  return api.put(API_PATH.POSTS_ID(id), post)
+  return api.put(POST_API_PATH.id(id), post)
 }
 
 export const deletePost = async (id: number) => {
-  return api.delete(API_PATH.POSTS_ID(id))
+  return api.delete(POST_API_PATH.id(id))
 }
