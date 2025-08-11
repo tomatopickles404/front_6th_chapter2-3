@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react"
 import { Edit2, MessageSquare, Plus, Search, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react"
 import { usePostsParams } from "features/post"
-import { fetchTags } from "features/tag"
-import { fetchUser } from "features/user"
-import { Tag } from "entities/tag"
+import { useUserQuery } from "features/user"
+import { useTagQuery } from "features/tag"
 import { User } from "entities/user"
+import { Post } from "entities/post"
 import { useDialog } from "shared/hooks"
 import {
   Button,
@@ -35,6 +35,9 @@ export default function PostsManager() {
   const { params, updateParams } = usePostsParams()
   const { skip, limit, search, sortBy, sortOrder, tag: selectedTag } = params
 
+  // const { data: user } = useUserQuery(userId)
+  const { data: tags } = useTagQuery()
+
   // 상태 관리
   const [total, setTotal] = useState(0)
 
@@ -42,8 +45,6 @@ export default function PostsManager() {
 
   const [selectedPost, setSelectedPost] = useState(null)
   const [newPost, setNewPost] = useState({ title: "", body: "", userId: 1 })
-
-  const [tags, setTags] = useState<Tag[]>([])
 
   const [comments, setComments] = useState({})
   const [selectedComment, setSelectedComment] = useState(null)
@@ -191,12 +192,6 @@ export default function PostsManager() {
     setLoading(false)
   }
 
-  // 태그 가져오기
-  const getTags = async () => {
-    const response = await fetchTags()
-    setTags(response)
-  }
-
   // comment
   // 댓글 가져오기
   const fetchComments = async (postId) => {
@@ -286,15 +281,9 @@ export default function PostsManager() {
 
   // 사용자 모달 열기
   const openUserModal = async (userId: number) => {
-    // TODO: 페이지에서 받기
-    const response = await fetchUser(userId)
-    setSelectedUser(response)
+    setSelectedUser(data)
     toggleShowUserModal()
   }
-
-  useEffect(() => {
-    getTags()
-  }, [])
 
   useEffect(() => {
     if (selectedTag) {
@@ -332,47 +321,44 @@ export default function PostsManager() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {posts.map((post) => (
-          <TableRow key={post.id}>
-            <TableCell>{post.id}</TableCell>
+        {posts.map(({ id, title, author, tags, reactions }: Post) => (
+          <TableRow key={id}>
+            <TableCell>{id}</TableCell>
             <TableCell>
               <div className="space-y-1">
-                <div>{highlightText(post.title, search)}</div>
+                <div>{highlightText(title, search)}</div>
 
                 <div className="flex flex-wrap gap-1">
-                  {post.tags?.map((tag) => (
+                  {tags.map(({ slug }) => (
                     <span
-                      key={tag}
+                      key={slug}
                       className={`px-1 text-[9px] font-semibold rounded-[4px] cursor-pointer ${
-                        selectedTag === tag
+                        selectedTag === slug
                           ? "text-white bg-blue-500 hover:bg-blue-600"
                           : "text-blue-800 bg-blue-100 hover:bg-blue-200"
                       }`}
                       onClick={() => {
-                        updateParams({ tag })
+                        updateParams({ tag: slug })
                       }}
                     >
-                      {tag}
+                      {slug}
                     </span>
                   ))}
                 </div>
               </div>
             </TableCell>
             <TableCell>
-              <div
-                className="flex items-center space-x-2 cursor-pointer"
-                onClick={() => openUserModal(post.author?.id)}
-              >
-                <img src={post.author?.image} alt={post.author?.username} className="w-8 h-8 rounded-full" />
-                <span>{post.author?.username}</span>
+              <div className="flex items-center space-x-2 cursor-pointer" onClick={() => openUserModal(author?.id)}>
+                <img src={author?.image} alt={author?.username} className="w-8 h-8 rounded-full" />
+                <span>{author?.username}</span>
               </div>
             </TableCell>
             <TableCell>
               <div className="flex items-center gap-2">
                 <ThumbsUp className="w-4 h-4" />
-                <span>{post.reactions?.likes || 0}</span>
+                <span>{reactions?.likes || 0}</span>
                 <ThumbsDown className="w-4 h-4" />
-                <span>{post.reactions?.dislikes || 0}</span>
+                <span>{reactions?.dislikes || 0}</span>
               </div>
             </TableCell>
             <TableCell>

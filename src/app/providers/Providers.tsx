@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider, QueryErrorResetBoundary } from "@tanstack/react-query"
 import { ErrorBoundary } from "react-error-boundary"
-import { ErrorFallback } from "app/ui/ErrorFallback"
+import { ErrorFallback } from "shared/components/ErrorFallback"
 import { Suspense, type ReactNode } from "react"
 
 const queryClient = new QueryClient({

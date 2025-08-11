@@ -1,1 +1,1 @@
-export const path = (...paths: string[]) => `/posts/${paths.join("/")}`
+export const path = (...paths: string[]) => `/${paths.join("/")}`
