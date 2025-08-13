@@ -1,1 +1,5 @@
 export * from "./usePostsParams"
+export * from "./usePosts"
+export * from "./usePostMutation"
+export * from "./useUpdatePostMutation"
+export * from "./useDeletePostMutation"

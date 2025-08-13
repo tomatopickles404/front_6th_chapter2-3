@@ -1,4 +1,4 @@
-import { api, httpClient } from "shared/utils/http"
+import { api, httpClient } from "shared/lib"
 import { PostsParams } from "../models"
 import { POST_API_PATH } from "entities/post"
 
@@ -23,17 +23,4 @@ export const fetchPosts = async (params: Partial<PostsParams> = {}) => {
   const query = httpClient.buildQuery(queryParams)
 
   return api.get(`${endpoint}?${query}`)
-}
-
-// 게시물 CRUD
-export const createPost = async (post: { title: string; body: string; userId: number }) => {
-  return api.post(POST_API_PATH.posts, post)
-}
-
-export const updatePost = async (id: number, post: { title: string; body: string }) => {
-  return api.put(POST_API_PATH.id(id), post)
-}
-
-export const deletePost = async (id: number) => {
-  return api.delete(POST_API_PATH.id(id))
 }

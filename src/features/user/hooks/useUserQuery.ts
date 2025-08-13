@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { USER_QUERY_KEY } from "../models/queries"
-import { api } from "shared/utils/http"
+import { api } from "/shared/lib/http"
 import { User } from "entities/user"
 
 const fetchUser = async (id: number) => {

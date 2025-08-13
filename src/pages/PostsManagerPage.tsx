@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { Edit2, MessageSquare, Plus, Search, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react"
 import { usePostsParams } from "features/post"
 import { useUserQuery } from "features/user"
-import { useTagQuery } from "features/tag"
+import { useTagsQuery, useTagQuery } from "features/tag"
 import { User } from "entities/user"
 import { Post } from "entities/post"
 import { useDialog } from "shared/hooks"
@@ -36,11 +36,13 @@ export default function PostsManager() {
   const { skip, limit, search, sortBy, sortOrder, tag: selectedTag } = params
 
   // const { data: user } = useUserQuery(userId)
-  const { data: tags } = useTagQuery()
-
+  const { data: tags } = useTagsQuery()
+  const { data: tag } = useTagQuery(selectedTag)
+  console.log("tag", tag)
   // 상태 관리
   const [total, setTotal] = useState(0)
 
+  // TODO: 추후 제거
   const [loading, setLoading] = useState(false)
 
   const [selectedPost, setSelectedPost] = useState(null)
@@ -165,7 +167,7 @@ export default function PostsManager() {
 
   // tag
   // 태그별 게시물 가져오기
-  const getPostsByTag = async (tag) => {
+  const getPostsByTag = async (tag: string) => {
     if (!tag || tag === "all") {
       getPosts()
       return
@@ -178,6 +180,9 @@ export default function PostsManager() {
       ])
       const postsData = await postsResponse.json()
       const usersData = await usersResponse.json()
+
+      console.log("postsData", postsData)
+      console.log("usersData", usersData)
 
       const postsWithUsers = postsData.posts.map((post) => ({
         ...post,
