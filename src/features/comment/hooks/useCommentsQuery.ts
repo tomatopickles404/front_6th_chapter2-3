@@ -9,7 +9,7 @@ const fetchComments = async (postId: number) => {
 
 export function useCommentsQuery(postId: number) {
   return useQuery({
-    queryKey: COMMENT_QUERY_KEY.list(postId),
+    queryKey: COMMENT_QUERY_KEY.byPost(postId),
     queryFn: () => fetchComments(postId),
   })
 }

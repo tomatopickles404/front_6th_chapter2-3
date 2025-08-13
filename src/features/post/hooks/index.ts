@@ -1,5 +1,6 @@
 export * from "./usePostsParams"
 export * from "./usePosts"
-export * from "./usePostMutation"
+export * from "./useSearchPosts"
 export * from "./useUpdatePostMutation"
 export * from "./useDeletePostMutation"
+export * from "./useCreatePostMutation"

@@ -1,12 +1,12 @@
 export const COMMENT_QUERY_KEY = {
   all: ["comments"],
 
-  // 사용자 목록
-  list: (postId: number) => [...COMMENT_QUERY_KEY.all, "list", postId],
+  // 게시물별 댓글 목록
+  byPost: (postId: number) => [...COMMENT_QUERY_KEY.all, "byPost", postId],
 
-  // 개별 사용자
+  // 개별 댓글
   detail: (id: number) => [...COMMENT_QUERY_KEY.all, "detail", id],
 
-  // 사용자 프로필 (이미지, 사용자명만)
-  profile: (id: number) => [...COMMENT_QUERY_KEY.all, "profile", id],
+  // 사용자별 댓글
+  byUser: (userId: number) => [...COMMENT_QUERY_KEY.all, "byUser", userId],
 } as const
