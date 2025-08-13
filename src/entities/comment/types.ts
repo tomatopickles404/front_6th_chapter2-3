@@ -4,3 +4,8 @@ export interface Comment {
   postId: number
   userId: number
 }
+
+export interface Reaction {
+  likes: number
+  dislikes: number
+}

@@ -1,15 +1,15 @@
 import { useQuery } from "@tanstack/react-query"
-import { USER_QUERY_KEY } from "../models/queries"
-import { api } from "/shared/lib/http"
+import { api } from "shared/lib"
 import { User } from "entities/user"
 
-const fetchUser = async (id: number) => {
+const fetchUser = async (id: number | null) => {
+  if (!id) return null
   return api.get<User>(`/users/${id}`)
 }
 
-export function useUserQuery(id: number) {
+export function useUserQuery(id: number | null) {
   return useQuery({
-    queryKey: USER_QUERY_KEY.user(id),
+    queryKey: ["user", id],
     queryFn: () => fetchUser(id),
     enabled: !!id,
   })

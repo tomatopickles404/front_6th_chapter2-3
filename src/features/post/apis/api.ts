@@ -1,5 +1,5 @@
 import { api, httpClient } from "shared/lib"
-import { PostsParams } from "../models"
+import { PostsParams, PostResponse } from "../models"
 import { POST_API_PATH } from "entities/post"
 
 const getEndpoint = (search: string | undefined, tag: string | undefined) => {
@@ -13,7 +13,7 @@ const getQueryParams = (search: string | undefined, restParams: Partial<PostsPar
   return restParams
 }
 
-export const fetchPosts = async (params: Partial<PostsParams> = {}) => {
+export const fetchPosts = async (params: Partial<PostsParams> = {}): Promise<PostResponse> => {
   const { search, tag, ...restParams } = params
 
   // 쿼리 파라미터 구성

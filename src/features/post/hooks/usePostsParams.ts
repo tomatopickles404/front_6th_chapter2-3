@@ -7,7 +7,7 @@ const defaultParams = {
   sortBy: "",
   sortOrder: "asc",
   tag: "",
-} as const
+}
 
 export function usePostsParams() {
   return useQueryParams(defaultParams)

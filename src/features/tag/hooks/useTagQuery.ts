@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
 import { TAG_QUERY_KEY } from "../models/queries"
-import { api } from "/shared/lib/http"
+import { api } from "shared/lib/http"
 import { Tag } from "entities/tag"
 import { TAG_API_PATH } from "entities/tag"
 

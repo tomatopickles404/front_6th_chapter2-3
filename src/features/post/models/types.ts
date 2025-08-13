@@ -7,3 +7,10 @@ export interface PostsParams {
   tag: string
   [key: string]: string | number | boolean
 }
+
+export interface PostResponse {
+  posts: Post[]
+  total: number
+  skip: number
+  limit: number
+}
