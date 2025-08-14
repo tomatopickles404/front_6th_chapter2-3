@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Edit2, Plus, Search, ThumbsUp, Trash2 } from "lucide-react"
+import { Plus, Search } from "lucide-react"
 import {
   usePostsParams,
   usePostsQuery,
@@ -10,8 +10,6 @@ import {
   PostTable,
 } from "features/post"
 import { useTagsQuery } from "features/tag"
-import { UserDialog } from "features/user"
-import { useCommentsQuery } from "features/comment"
 import { useQueryClient } from "@tanstack/react-query"
 import { Post } from "entities/post"
 import { useDialog } from "shared/hooks"
@@ -21,17 +19,13 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
   Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Textarea,
+  Pagination,
 } from "shared/components"
 import { POST_QUERY_KEY } from "features/post"
 
@@ -39,9 +33,8 @@ export default function PostsManager() {
   const { params, updateParams } = usePostsParams()
   const { search, sortBy, sortOrder, tag: selectedTag } = params
 
-  // TanStack Query 훅으로 서버 상태 관리
   const { data: postPages, isLoading: postsLoading, error: postsError } = usePostsQuery(params)
-  const { posts, total, skip: skipPost, limit: limitPost } = postPages
+  const { posts, total } = postPages
 
   const { data: resultPosts, isLoading: searchLoading } = useSearchPosts(search, params)
   const { data: tags } = useTagsQuery()
@@ -49,11 +42,9 @@ export default function PostsManager() {
   const isLoadingTable = postsLoading || searchLoading
   const postsToDisplay = search.trim() ? resultPosts?.posts || [] : posts || []
 
-  // Mutation 훅들
   const { mutate: updatePost } = useUpdatePostMutation()
   const { mutate: deletePost } = useDeletePostMutation()
 
-  // 클라이언트 상태만 유지 (UI 상태)
   const [selectedPost, setSelectedPost] = useState<Post | undefined>(undefined)
 
   const { isOpen: showAddDialog, toggleDialog: toggleShowAddDialog } = useDialog()
@@ -177,36 +168,7 @@ export default function PostsManager() {
           )}
 
           {/* 페이지네이션 */}
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <span>표시</span>
-              <Select value={limitPost.toString()} onValueChange={(value) => updateParams({ limit: Number(value) })}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="10" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="30">30</SelectItem>
-                </SelectContent>
-              </Select>
-              <span>항목</span>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                disabled={skipPost === 0}
-                onClick={() => updateParams({ skip: Math.max(0, skipPost - limitPost) })}
-              >
-                이전
-              </Button>
-              <Button
-                disabled={skipPost + limitPost >= (total || 0)}
-                onClick={() => updateParams({ skip: skipPost + limitPost })}
-              >
-                다음
-              </Button>
-            </div>
-          </div>
+          <Pagination params={params} updateParams={updateParams} total={total} />
         </div>
       </CardContent>
 
