@@ -2,15 +2,15 @@ import { useState } from "react"
 import { Edit2, MessageSquare, Plus, Search, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react"
 import {
   usePostsParams,
-  usePosts,
   useSearchPosts,
   useUpdatePostMutation,
   useDeletePostMutation,
   useCreatePostMutation,
+  usePostsQuery,
+  usePostForm,
 } from "features/post"
 import { useTagsQuery } from "features/tag"
 import { useUsersQuery, useUserQuery } from "features/user"
-import { User } from "entities/user"
 import { useCommentsQuery } from "features/comment"
 import { useQueryClient } from "@tanstack/react-query"
 import { Post } from "entities/post"
@@ -60,7 +60,7 @@ export default function PostsManager() {
   const { search, sortBy, sortOrder, tag: selectedTag } = params
 
   // TanStack Query 훅으로 서버 상태 관리
-  const { data: postPages, isLoading: postsLoading, error: postsError } = usePosts(params)
+  const { data: postPages, isLoading: postsLoading, error: postsError } = usePostsQuery(params)
   const { posts, total, skip: skipPost, limit: limitPost } = postPages
 
   const { data: resultPosts, isLoading: searchLoading } = useSearchPosts(search, params)
@@ -70,13 +70,11 @@ export default function PostsManager() {
   const postsToDisplay = search.trim() ? resultPosts?.posts || [] : posts || []
 
   // Mutation 훅들
-  const { mutate: createPost } = useCreatePostMutation()
   const { mutate: updatePost } = useUpdatePostMutation()
   const { mutate: deletePost } = useDeletePostMutation()
 
   // 클라이언트 상태만 유지 (UI 상태)
   const [selectedPost, setSelectedPost] = useState<Post | null>(null)
-  const [newPost, setNewPost] = useState({ title: "", body: "", userId: 1 })
 
   const { isOpen: showAddDialog, toggleDialog: toggleShowAddDialog } = useDialog()
   const { isOpen: showEditDialog, toggleDialog: toggleShowEditDialog } = useDialog()
@@ -86,15 +84,6 @@ export default function PostsManager() {
   const queryClient = useQueryClient()
 
   // 간단한 핸들러 함수들
-  const handleAddPost = () => {
-    createPost(newPost, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: POST_QUERY_KEY.all })
-      },
-    })
-    toggleShowAddDialog()
-    setNewPost({ title: "", body: "", userId: 1 })
-  }
 
   const handleUpdatePost = () => {
     if (!selectedPost) return
@@ -242,33 +231,7 @@ export default function PostsManager() {
       </CardContent>
 
       {/* 게시물 추가 대화상자 */}
-      <Dialog open={showAddDialog} onOpenChange={toggleShowAddDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>새 게시물 추가</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              placeholder="제목"
-              value={newPost.title}
-              onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
-            />
-            <Textarea
-              rows={30}
-              placeholder="내용"
-              value={newPost.body}
-              onChange={(e) => setNewPost({ ...newPost, body: e.target.value })}
-            />
-            <Input
-              type="number"
-              placeholder="사용자 ID"
-              value={newPost.userId}
-              onChange={(e) => setNewPost({ ...newPost, userId: Number(e.target.value) })}
-            />
-            <Button onClick={handleAddPost}>게시물 추가</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <PostDialog open={showAddDialog} toggleDialog={toggleShowAddDialog} />
 
       {/* 게시물 수정 대화상자 */}
       <Dialog open={showEditDialog} onOpenChange={toggleShowEditDialog}>
@@ -306,6 +269,90 @@ export default function PostsManager() {
         </DialogContent>
       </Dialog>
     </Card>
+  )
+}
+
+export function PostDetailDialog({
+  open,
+  toggleDialog,
+  post,
+  search,
+}: {
+  open: boolean
+  toggleDialog: () => void
+  post: Post
+  search: string
+}) {
+  return (
+    <Dialog open={open} onOpenChange={toggleDialog}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>{highlightText(post?.title || "", search)}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <p>{highlightText(post?.body || "", search)}</p>
+          {post && <Comments postId={post.id} />}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export function PostEditDialog({
+  open,
+  toggleDialog,
+  post,
+  search,
+}: {
+  open: boolean
+  toggleDialog: () => void
+  post: Post
+  search: string
+}) {
+  return (
+    <Dialog open={open} onOpenChange={toggleDialog}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>{highlightText(post.title || "", search)}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <p>{highlightText(post.body || "", search)}</p>
+          {post && <Comments postId={post.id} />}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export function PostDialog({ open, toggleDialog }: { open: boolean; toggleDialog: () => void }) {
+  const queryClient = useQueryClient()
+  const { mutate: createPost } = useCreatePostMutation()
+  const { post, handleChange, resetPost } = usePostForm()
+
+  const handleAddPost = () => {
+    createPost(post, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: POST_QUERY_KEY.all })
+        toggleDialog()
+        resetPost()
+      },
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={toggleDialog}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>새 게시물 추가</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Input placeholder="제목" name="title" value={post.title} onChange={handleChange} />
+          <Textarea rows={30} placeholder="내용" name="body" value={post.body} onChange={handleChange} />
+          <Input type="number" placeholder="사용자 ID" name="userId" value={post.userId} onChange={handleChange} />
+          <Button onClick={handleAddPost}>게시물 추가</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -418,12 +465,12 @@ export function PostTable({ posts }: PostTableProps) {
       </Table>
 
       {/* 사용자 모달 */}
-      {showUserModal && <UserModal open={showUserModal} onOpenChange={toggleShowUserModal} userId={userId} />}
+      {showUserModal && <UserDialog open={showUserModal} onOpenChange={toggleShowUserModal} userId={userId} />}
     </>
   )
 }
 
-export function UserModal({
+export function UserDialog({
   open,
   onOpenChange,
   userId,
