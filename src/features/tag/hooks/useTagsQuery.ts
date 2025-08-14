@@ -5,12 +5,14 @@ import { TAG_API_PATH } from "entities/tag"
 import { TAG_QUERY_KEY } from "../models/queries"
 
 export const fetchTags = async () => {
-  return api.get<Tag[]>(TAG_API_PATH.tags)
+  return await api.get<Tag[]>(TAG_API_PATH.tags)
 }
 
 export function useTagsQuery() {
   return useSuspenseQuery({
     queryKey: TAG_QUERY_KEY.tags(),
     queryFn: fetchTags,
+    staleTime: 5 * 60 * 1000, // 5분
+    retry: 2, // 재시도 2회
   })
 }

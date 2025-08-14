@@ -4,7 +4,7 @@ export function useDialog() {
   const [isOpen, setIsOpen] = useState(false)
 
   const toggleDialog = () => {
-    setIsOpen(!isOpen)
+    setIsOpen((prev) => !prev)
   }
 
   return {

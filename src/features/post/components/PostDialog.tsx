@@ -65,7 +65,6 @@ export function PostDialog({
           <DialogTitle>{getTitle()}</DialogTitle>
         </DialogHeader>
 
-        {/* JSX로 직접 표현 - 선언적이고 명확 */}
         {type === "create" && <PostCreateForm onSubmit={handleCreate} />}
         {type === "edit" && post && <PostEditForm post={post} onSubmit={handleEdit} />}
         {type === "view" && post && <PostViewContent post={post} search={search} />}

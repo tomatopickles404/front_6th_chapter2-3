@@ -6,7 +6,7 @@ const createComment = async (comment: { body: string; postId: number; userId: nu
   return api.post(COMMENT_API_PATH.comments, comment)
 }
 
-export function useCommentMutation() {
+export function useCreateCommentMutation() {
   return useMutation({
     mutationFn: createComment,
   })

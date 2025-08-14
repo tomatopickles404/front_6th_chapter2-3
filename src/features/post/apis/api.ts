@@ -2,25 +2,20 @@ import { api, httpClient } from "shared/lib"
 import { PostsParams, PostResponse } from "../models"
 import { POST_API_PATH } from "entities/post"
 
-const getEndpoint = (search: string | undefined, tag: string | undefined) => {
-  if (search) return POST_API_PATH.search
-  if (tag && tag !== "all") return POST_API_PATH.tag
-  return POST_API_PATH.posts
-}
-
-const getQueryParams = (search: string | undefined, restParams: Partial<PostsParams>) => {
-  if (search) return { ...restParams, q: search }
-  return restParams
-}
-
 export const fetchPosts = async (params: Partial<PostsParams> = {}): Promise<PostResponse> => {
   const { search, tag, ...restParams } = params
 
-  // 쿼리 파라미터 구성
+  let endpoint = POST_API_PATH.posts
+  let queryParams = { ...restParams }
 
-  const endpoint = getEndpoint(search, tag)
-  const queryParams = getQueryParams(search, restParams)
+  if (search) {
+    endpoint = POST_API_PATH.search
+    queryParams = { ...restParams, q: search }
+  } else if (tag && tag !== "all") {
+    // 태그별 조회 시 쿼리 파라미터에 태그 포함
+    queryParams = { ...restParams, tag }
+  }
+
   const query = httpClient.buildQuery(queryParams)
-
   return api.get(`${endpoint}?${query}`)
 }

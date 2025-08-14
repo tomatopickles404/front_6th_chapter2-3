@@ -1,60 +1,89 @@
-import { useState } from "react"
-import { Plus, Search } from "lucide-react"
-import {
-  usePostsParams,
-  usePostsQuery,
-  useSearchPosts,
-  useUpdatePostMutation,
-  useDeletePostMutation,
-  PostDialog,
-  PostTable,
-} from "features/post"
-import { useTagsQuery } from "features/tag"
-import { useQueryClient } from "@tanstack/react-query"
-import { Post } from "entities/post"
+import { Plus } from "lucide-react"
+import { usePostsParams, usePostsQuery, useSearchPosts, PostDialog, PostTable, PostFilters } from "features/post"
 import { useDialog } from "shared/hooks"
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Pagination,
-} from "shared/components"
-import { POST_QUERY_KEY } from "features/post"
+import { Button, Card, CardContent, CardHeader, CardTitle, Pagination } from "shared/components"
+import { UserDialog, useUserId } from "features/user"
+import { useUpdatePostMutation, useDeletePostMutation } from "features/post/hooks"
+import { useQueryClient } from "@tanstack/react-query"
+import { POST_QUERY_KEY } from "features/post/models"
+import { useTagsQuery } from "features/tag"
+import { Post } from "entities/post"
+import { useState } from "react"
 
 export default function PostsManager() {
-  const { params, updateParams } = usePostsParams()
-  const { search, sortBy, sortOrder, tag: selectedTag } = params
+  return (
+    <Card className="w-full max-w-6xl mx-auto">
+      <PostsManagerHeader />
+      <PostsManagerContent />
+    </Card>
+  )
+}
 
+// 게시물 관리자 헤더 (게시물 추가 다이얼로그 완전 관리)
+function PostsManagerHeader() {
+  const { isOpen: showAddDialog, toggleDialog: toggleShowAddDialog } = useDialog()
+
+  return (
+    <>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>게시물 관리자</span>
+          <Button onClick={toggleShowAddDialog}>
+            <Plus className="w-4 h-4 mr-2" />
+            게시물 추가
+          </Button>
+        </CardTitle>
+      </CardHeader>
+
+      {/* 게시물 추가 다이얼로그를 여기서 렌더링 */}
+      {showAddDialog && <PostDialog type="create" open={showAddDialog} onOpenChange={toggleShowAddDialog} />}
+    </>
+  )
+}
+
+// 게시물 관리자 메인 콘텐츠 (다른 다이얼로그들만 관리)
+function PostsManagerContent() {
+  const [selectedPost, setSelectedPost] = useState<Post | undefined>(undefined)
+  // showAddDialog 제거 (PostsManagerHeader에서 관리)
+  const { isOpen: showEditDialog, toggleDialog: toggleShowEditDialog } = useDialog()
+  const { isOpen: showPostDetailDialog, toggleDialog: toggleShowPostDetailDialog } = useDialog()
+  const { isOpen: showUserModal, toggleDialog: toggleShowUserModal } = useDialog()
+
+  const { params, updateParams } = usePostsParams()
+  const { search } = params
   const { data: postPages, isLoading: postsLoading, error: postsError } = usePostsQuery(params)
   const { posts, total } = postPages
-
   const { data: resultPosts, isLoading: searchLoading } = useSearchPosts(search, params)
   const { data: tags } = useTagsQuery()
+  const { userId, updateUserId } = useUserId()
+
+  const { mutate: updatePost } = useUpdatePostMutation()
+  const { mutate: deletePost } = useDeletePostMutation()
+  const queryClient = useQueryClient()
 
   const isLoadingTable = postsLoading || searchLoading
   const postsToDisplay = search.trim() ? resultPosts?.posts || [] : posts || []
 
-  const { mutate: updatePost } = useUpdatePostMutation()
-  const { mutate: deletePost } = useDeletePostMutation()
+  const openPostDetail = (id: number) => {
+    const post = postsToDisplay.find((post) => post.id === id)
+    if (post) {
+      setSelectedPost(post)
+      toggleShowPostDetailDialog()
+    }
+  }
 
-  const [selectedPost, setSelectedPost] = useState<Post | undefined>(undefined)
+  const openEditDialog = (post: { id: number; title: string; body: string }) => {
+    const fullPost = postsToDisplay.find((p) => p.id === post.id)
+    if (fullPost) {
+      setSelectedPost(fullPost)
+      toggleShowEditDialog()
+    }
+  }
 
-  const { isOpen: showAddDialog, toggleDialog: toggleShowAddDialog } = useDialog()
-  const { isOpen: showEditDialog, toggleDialog: toggleShowEditDialog } = useDialog()
-  const { isOpen: showEditCommentDialog, toggleDialog: toggleShowEditCommentDialog } = useDialog()
-  const { isOpen: showPostDetailDialog, toggleDialog: toggleShowPostDetailDialog } = useDialog()
-
-  const queryClient = useQueryClient()
-
-  // 간단한 핸들러 함수들
+  const openUserDialog = (userId: number) => {
+    updateUserId(userId)
+    toggleShowUserModal()
+  }
 
   const handleUpdatePost = () => {
     if (!selectedPost) return
@@ -76,117 +105,62 @@ export default function PostsManager() {
 
   const handleDeletePost = (id: number) => {
     deletePost(id, {
-      onSuccess: (_, id) => {
-        queryClient.removeQueries({ queryKey: POST_QUERY_KEY.detail(id) })
+      onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: POST_QUERY_KEY.all })
       },
     })
   }
 
-  // 게시물 상세 보기
-  const openPostDetail = (post: Post) => {
-    setSelectedPost(post)
-    toggleShowPostDetailDialog()
-  }
-
-  //  에러 처리
+  // 에러 처리
   if (postsError) {
     return <div>게시물을 불러오는 중 오류가 발생했습니다: {postsError.message}</div>
   }
 
   return (
-    <Card className="w-full max-w-6xl mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>게시물 관리자</span>
-          <Button onClick={() => toggleShowAddDialog()}>
-            <Plus className="w-4 h-4 mr-2" />
-            게시물 추가
-          </Button>
-        </CardTitle>
-      </CardHeader>
+    <>
       <CardContent>
         <div className="flex flex-col gap-4">
-          {/* 검색 및 필터 컨트롤 */}
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="게시물 검색..."
-                  className="pl-8"
-                  value={search}
-                  onChange={(e) => updateParams({ search: e.target.value })}
-                />
-              </div>
-            </div>
-            <Select
-              value={selectedTag}
-              onValueChange={(value) => {
-                updateParams({ tag: value })
-              }}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="태그 선택" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">모든 태그</SelectItem>
-                {tags?.map((tag) => (
-                  <SelectItem key={tag.url} value={tag.slug}>
-                    {tag.slug}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={(value) => updateParams({ sortBy: value as any })}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="정렬 기준" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">없음</SelectItem>
-                <SelectItem value="id">ID</SelectItem>
-                <SelectItem value="title">제목</SelectItem>
-                <SelectItem value="reactions">반응</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sortOrder} onValueChange={(value) => updateParams({ sortOrder: value as any })}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="정렬 순서" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="asc">오름차순</SelectItem>
-                <SelectItem value="desc">내림차순</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <PostFilters />
 
-          {/* 게시물 테이블 */}
           {isLoadingTable ? (
             <div className="flex justify-center p-4">로딩 중...</div>
           ) : (
-            <PostTable posts={postsToDisplay} />
+            <PostTable
+              posts={postsToDisplay}
+              onViewPost={openPostDetail}
+              onEditPost={openEditDialog}
+              onViewUser={openUserDialog}
+              onDeletePost={handleDeletePost}
+            />
           )}
 
-          {/* 페이지네이션 */}
           <Pagination params={params} updateParams={updateParams} total={total} />
         </div>
       </CardContent>
 
-      <PostDialog type="create" open={showAddDialog} onOpenChange={toggleShowAddDialog} />
-      <PostDialog
-        type="edit"
-        open={showEditDialog}
-        onOpenChange={toggleShowEditDialog}
-        post={selectedPost}
-        search={search}
-      />
-      <PostDialog
-        type="view"
-        open={showPostDetailDialog}
-        onOpenChange={toggleShowPostDetailDialog}
-        post={selectedPost}
-        search={search}
-      />
-    </Card>
+      {/* 게시물 추가 다이얼로그 제거 (PostsManagerHeader에서 관리) */}
+
+      {showEditDialog && (
+        <PostDialog
+          type="edit"
+          open={showEditDialog}
+          onOpenChange={toggleShowEditDialog}
+          post={selectedPost}
+          search={search}
+        />
+      )}
+
+      {showPostDetailDialog && (
+        <PostDialog
+          type="view"
+          open={showPostDetailDialog}
+          onOpenChange={toggleShowPostDetailDialog}
+          post={selectedPost}
+          search={search}
+        />
+      )}
+
+      {showUserModal && <UserDialog open={showUserModal} onOpenChange={toggleShowUserModal} userId={userId} />}
+    </>
   )
 }
