@@ -40,7 +40,6 @@ function PostsManagerContent() {
   const { data: postPages, isLoading: postsLoading, error: postsError } = usePostsQuery(params)
   const { posts, total } = postPages
   const { data: resultPosts, isLoading: searchLoading } = useSearchPosts(search, params)
-  const { data: tags } = useTagsQuery()
 
   const { mutate: deletePost } = useDeletePostMutation()
   const queryClient = useQueryClient()
@@ -73,7 +72,7 @@ function PostsManagerContent() {
   const handleDeletePost = (id: number) => {
     deletePost(id, {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: POST_QUERY_KEY.all })
+        queryClient.invalidateQueries({ queryKey: POST_QUERY_KEY.posts(params) })
       },
     })
   }

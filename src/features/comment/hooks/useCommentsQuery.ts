@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query"
 import { api } from "shared/lib"
+import { type Comment } from "entities/comment"
 import { COMMENT_API_PATH } from "entities/comment"
-import { COMMENT_QUERY_KEY } from "../models/queries"
+import { COMMENT_QUERY_KEY } from "../models"
 
 const fetchComments = async (postId: number) => {
   return await api.get<Comment[]>(COMMENT_API_PATH.comments, { params: { postId } })

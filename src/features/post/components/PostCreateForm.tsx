@@ -1,6 +1,6 @@
 import { Button, Input, Textarea } from "shared/components"
 import { usePostForm } from "../hooks/usePostForm"
-import { PostFormData } from "./PostDialog"
+import { PostFormData } from "../models"
 
 export function PostCreateForm({ onSubmit }: { onSubmit: (data: PostFormData) => void }) {
   const { formData, updateField } = usePostForm()

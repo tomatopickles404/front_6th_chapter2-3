@@ -1,8 +1,7 @@
-import { useDialog } from "shared/hooks"
 import { useState } from "react"
-import { type Comment as CommentType } from "entities/comment"
+import { type Comment } from "entities/comment"
 import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, Textarea } from "shared/components"
-import { useUserId } from "features/user"
+import { overlay } from "overlay-kit"
 import { ThumbsUp, Edit2, Trash2, Plus } from "lucide-react"
 import {
   useCommentsQuery,
@@ -28,39 +27,41 @@ export function Comments({ postId }: { postId: number }) {
 
 // 댓글 헤더 컴포넌트
 function CommentHeader({ postId }: { postId: number }) {
-  const { isOpen: showAddDialog, toggleDialog: toggleAddDialog } = useDialog()
+  const handleAddComment = () => {
+    overlay.open(({ isOpen, close }) => <AddCommentDialog postId={postId} open={isOpen} onOpenChange={close} />)
+  }
 
   return (
     <>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold">댓글</h3>
-        <Button size="sm" onClick={toggleAddDialog}>
+        <Button size="sm" onClick={handleAddComment}>
           <Plus className="w-3 h-3 mr-1" />
           댓글 추가
         </Button>
       </div>
-
-      <AddCommentDialog postId={postId} open={showAddDialog} onOpenChange={toggleAddDialog} />
     </>
   )
 }
 
 // 댓글 목록 컴포넌트
-function CommentList({ comments }: { comments: CommentType[] }) {
-  const { isOpen: showEditDialog, toggleDialog: toggleEditDialog } = useDialog()
-
+function CommentList({ comments }: { comments: Comment[] }) {
   return (
     <div className="space-y-1">
-      {comments.map((comment) => (
-        <CommentItem key={comment.id} comment={comment} onEdit={toggleEditDialog} />
+      {comments.map((comment: Comment) => (
+        <CommentItem key={comment.id} comment={comment} />
       ))}
     </div>
   )
 }
 
 // 댓글 아이템 컴포넌트
-function CommentItem({ comment, onEdit }: { comment: CommentType; onEdit: () => void }) {
+function CommentItem({ comment }: { comment: Comment }) {
   const { user, body } = comment
+
+  const handleEdit = () => {
+    overlay.open(({ isOpen, close }) => <EditCommentDialog comment={comment} open={isOpen} onOpenChange={close} />)
+  }
 
   return (
     <>
@@ -72,21 +73,18 @@ function CommentItem({ comment, onEdit }: { comment: CommentType; onEdit: () => 
 
         <div className="flex items-center space-x-1">
           <LikeButton comment={comment} />
-          <Button variant="ghost" size="sm" onClick={onEdit}>
+          <Button variant="ghost" size="sm" onClick={handleEdit}>
             <Edit2 className="w-3 h-3" />
           </Button>
           <DeleteButton comment={comment} />
         </div>
       </div>
-
-      <EditCommentDialog comment={comment} open={showEditDialog} onOpenChange={toggleEditDialog} />
     </>
   )
 }
 
 // 댓글 추가 다이얼로그
 function AddCommentDialog({
-  postId,
   open,
   onOpenChange,
 }: {
@@ -94,7 +92,6 @@ function AddCommentDialog({
   open: boolean
   onOpenChange: (open: boolean) => void
 }) {
-  const { userId } = useUserId()
   const [body, setBody] = useState("")
   const { mutate: createComment, isPending } = useCreateCommentMutation()
 
@@ -140,7 +137,7 @@ function EditCommentDialog({
   open,
   onOpenChange,
 }: {
-  comment: CommentType
+  comment: Comment
   open: boolean
   onOpenChange: () => void
 }) {
@@ -183,11 +180,11 @@ function EditCommentDialog({
 }
 
 // 좋아요 버튼 컴포넌트
-function LikeButton({ comment }: { comment: CommentType }) {
+function LikeButton({ comment }: { comment: Comment }) {
   const { mutate: updateLike, isPending } = useUpdateLikeMutation()
 
   const handleLike = () => {
-    // updateLike({ id: comment.id, postId })
+    // updateLike({ id: comment.id, postId } })
   }
 
   return (
@@ -199,7 +196,7 @@ function LikeButton({ comment }: { comment: CommentType }) {
 }
 
 // 삭제 버튼 컴포넌트
-function DeleteButton({ comment }: { comment: CommentType }) {
+function DeleteButton({ comment }: { comment: Comment }) {
   const { mutate: deleteComment, isPending } = useDeleteCommentMutation()
 
   const handleDelete = () => {

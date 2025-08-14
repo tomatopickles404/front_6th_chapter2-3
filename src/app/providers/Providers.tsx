@@ -3,6 +3,7 @@ import { ErrorBoundary } from "react-error-boundary"
 import { OverlayProvider } from "overlay-kit"
 import { ErrorFallback } from "shared/components/ErrorFallback"
 import { Suspense, type ReactNode } from "react"
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,6 +33,7 @@ export function Providers({ children }: { children: ReactNode }) {
             <OverlayProvider>
               <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
             </OverlayProvider>
+            <ReactQueryDevtools initialIsOpen={false} />
           </QueryClientProvider>
         </ErrorBoundary>
       )}

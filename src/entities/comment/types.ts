@@ -9,4 +9,5 @@ export interface Comment {
   body: string
   likes: number
   user: CommentUser
+  postId: number
 }
