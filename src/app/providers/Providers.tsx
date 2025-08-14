@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider, QueryErrorResetBoundary } from "@tanstack/react-query"
 import { ErrorBoundary } from "react-error-boundary"
+import { OverlayProvider } from "overlay-kit"
 import { ErrorFallback } from "shared/components/ErrorFallback"
 import { Suspense, type ReactNode } from "react"
 
@@ -28,7 +29,9 @@ export function Providers({ children }: { children: ReactNode }) {
           )}
         >
           <QueryClientProvider client={queryClient}>
-            <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+            <OverlayProvider>
+              <Suspense fallback={<div>Loading...</div>}>{children}</Suspense>
+            </OverlayProvider>
           </QueryClientProvider>
         </ErrorBoundary>
       )}
