@@ -1,13 +1,14 @@
 import { api } from "shared/lib"
-import { COMMENT_API_PATH } from "entities/comment"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, UseMutationOptions } from "@tanstack/react-query"
 
-const likeComment = async ({ id, postId }: { id: number; postId: number }) => {
-  return api.patch(COMMENT_API_PATH.id(id), { postId })
+const likeComment = async ({ id, likes }: { id: number; likes: number }): Promise<Comment> => {
+  const apiPath = `/comments/${id}`
+  return api.patch(apiPath, { likes })
 }
 
-export function useUpdateLikeMutation() {
+export function useUpdateLikeMutation(options?: UseMutationOptions<Comment, Error, { id: number; likes: number }>) {
   return useMutation({
-    mutationFn: likeComment,
+    mutationFn: ({ id, likes }: { id: number; likes: number }) => likeComment({ id, likes }),
+    ...options,
   })
 }

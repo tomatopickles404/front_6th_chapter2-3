@@ -1,25 +1,30 @@
 import { Search } from "lucide-react"
 import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "shared/components"
-import { usePostsParams } from "features/post"
+import { PostsParams } from "features/post"
 import { useTagsQuery } from "features/tag"
 
-export function PostFilters() {
-  const { params, updateParams } = usePostsParams()
+export function PostFilters({
+  params,
+  updateParams,
+}: {
+  params: PostsParams
+  updateParams: (params: PostsParams) => void
+}) {
   const { search, sortBy, sortOrder, tag: selectedTag } = params
   const { data: tags, isLoading, error } = useTagsQuery() // 에러 상태 추가
 
   return (
     <div className="flex gap-4">
-      <SearchFilter value={search} onChange={(value) => updateParams({ search: value })} />
+      <SearchFilter value={search} onChange={(value) => updateParams({ ...params, search: value })} />
       <TagFilter
         value={selectedTag}
         options={tags || []} // 에러 시 빈 배열 사용
-        onChange={(value) => updateParams({ tag: value })}
+        onChange={(value) => updateParams({ ...params, tag: value })}
         isLoading={isLoading} // 로딩 상태 전달
         error={error} // 에러 상태 전달
       />
-      <SortByFilter value={sortBy} onChange={(value) => updateParams({ sortBy: value })} />
-      <SortOrderFilter value={sortOrder} onChange={(value) => updateParams({ sortOrder: value })} />
+      <SortByFilter value={sortBy} onChange={(value) => updateParams({ ...params, sortBy: value })} />
+      <SortOrderFilter value={sortOrder} onChange={(value) => updateParams({ ...params, sortOrder: value })} />
     </div>
   )
 }

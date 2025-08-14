@@ -7,7 +7,6 @@ export function useSearchPosts(search: string, params: Omit<PostsParams, "search
   return useQuery({
     queryKey: POST_QUERY_KEY.search(search, params),
     queryFn: () => fetchPosts({ ...params, search }),
-    enabled: !!search.trim(),
-    staleTime: 2 * 60 * 1000, // 2분
+    staleTime: 0,
   })
 }

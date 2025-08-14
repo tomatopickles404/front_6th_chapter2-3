@@ -1,34 +1,62 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { type Comment } from "entities/comment"
 import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, Textarea } from "shared/components"
 import { overlay } from "overlay-kit"
 import { ThumbsUp, Edit2, Trash2, Plus } from "lucide-react"
-import {
-  useCommentsQuery,
-  useCreateCommentMutation,
-  useUpdateCommentMutation,
-  useUpdateLikeMutation,
-  useDeleteCommentMutation,
-} from "../hooks"
+import { useQueryClient } from "@tanstack/react-query"
+import { useCommentsQuery, useUpdateCommentMutation, useUpdateLikeMutation, useDeleteCommentMutation } from "../hooks"
+import { COMMENT_QUERY_KEY } from "../models/queries"
+import { useCommentManagement } from "../hooks/useCommentManagement"
+import { User } from "entities/user"
+import { useInputValue } from "shared/hooks"
+
+type CommentsMap = {
+  [postId: number]: Comment[]
+}
 
 export function Comments({ postId }: { postId: number }) {
-  const { data: comments, isLoading: isLoadingComments } = useCommentsQuery(postId)
+  const { data: commentsData, isLoading: isLoadingComments } = useCommentsQuery(postId)
+
+  const [comments, setComments] = useState<CommentsMap>({})
+
+  useEffect(() => {
+    if (commentsData) {
+      let filteredComments: Comment[] = []
+
+      if (Array.isArray(commentsData)) {
+        // postId가 일치하는 댓글만 필터링
+        filteredComments = commentsData.filter((comment) => comment.postId === postId)
+      }
+      // commentsData가 객체이고 comments 속성을 가진 경우만 처리
+      else if (commentsData && typeof commentsData === "object" && "comments" in commentsData) {
+        // @ts-expect-error 타입 에러 무시하고 간단하게 처리
+        const rawComments = Array.isArray(commentsData.comments) ? commentsData.comments : []
+        filteredComments = rawComments.filter((comment: Comment) => comment.postId === postId)
+      }
+
+      setComments((prev) => ({
+        ...prev,
+        [postId]: filteredComments,
+      }))
+    }
+  }, [commentsData, postId])
 
   if (isLoadingComments) return <div>Loading...</div>
-  if (!comments) return null
+
+  const postComments = comments[postId] || []
 
   return (
     <div className="mt-2">
-      <CommentHeader postId={postId} />
-      <CommentList comments={comments} />
+      <CommentHeader />
+      <CommentList comments={postComments} />
     </div>
   )
 }
 
 // 댓글 헤더 컴포넌트
-function CommentHeader({ postId }: { postId: number }) {
+function CommentHeader() {
   const handleAddComment = () => {
-    overlay.open(({ isOpen, close }) => <AddCommentDialog postId={postId} open={isOpen} onOpenChange={close} />)
+    overlay.open(({ isOpen, close }) => <AddCommentDialog open={isOpen} onOpenChange={close} />)
   }
 
   return (
@@ -46,9 +74,17 @@ function CommentHeader({ postId }: { postId: number }) {
 
 // 댓글 목록 컴포넌트
 function CommentList({ comments }: { comments: Comment[] }) {
+  if (comments.length === 0) {
+    return (
+      <div className="text-center py-4 text-muted-foreground text-sm">
+        아직 댓글이 없습니다. 첫 번째 댓글을 작성해보세요!
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-1">
-      {comments.map((comment: Comment) => (
+      {comments.map((comment) => (
         <CommentItem key={comment.id} comment={comment} />
       ))}
     </div>
@@ -83,30 +119,18 @@ function CommentItem({ comment }: { comment: Comment }) {
   )
 }
 
-// 댓글 추가 다이얼로그
-function AddCommentDialog({
-  open,
-  onOpenChange,
-}: {
-  postId: number
-  open: boolean
-  onOpenChange: (open: boolean) => void
-}) {
-  const [body, setBody] = useState("")
-  const { mutate: createComment, isPending } = useCreateCommentMutation()
+// 댓글 추가 다이얼로그 (추상화된 로직 사용)
+function AddCommentDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { body, setBody, currentUser, isLoadingUser, isPending, handleSubmit, resetForm } = useCommentManagement()
 
-  const handleSubmit = () => {
-    if (!body.trim()) return
+  const handleSuccess = () => {
+    resetForm()
+    onOpenChange(false)
+  }
 
-    createComment(
-      // { body: body.trim(), postId, userId },
-      {
-        onSuccess: () => {
-          setBody("")
-          onOpenChange(false)
-        },
-      },
-    )
+  // 로딩 상태 처리
+  if (isLoadingUser) {
+    return <LoadingDialog title="새 댓글 추가" message="사용자 정보를 불러오는 중..." />
   }
 
   return (
@@ -115,17 +139,62 @@ function AddCommentDialog({
         <DialogHeader>
           <DialogTitle>새 댓글 추가</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <Textarea placeholder="댓글 내용" value={body} onChange={(e) => setBody(e.target.value)} />
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              취소
-            </Button>
-            <Button onClick={handleSubmit} disabled={isPending}>
-              {isPending ? "추가 중..." : "댓글 추가"}
-            </Button>
-          </div>
-        </div>
+        <CommentForm
+          body={body}
+          setBody={setBody}
+          currentUser={currentUser}
+          isPending={isPending}
+          onSubmit={handleSubmit}
+          onSuccess={handleSuccess}
+        />
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// 댓글 폼 컴포넌트 (재사용 가능)
+function CommentForm({
+  body,
+  setBody,
+  currentUser,
+  isPending,
+  onSubmit,
+  onSuccess,
+}: {
+  body: string
+  setBody: (body: string) => void
+  currentUser: User | null
+  isPending: boolean
+  onSubmit: () => void
+  onSuccess: () => void
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="text-sm text-muted-foreground">
+        작성자: {currentUser?.username} (ID: {currentUser?.id})
+      </div>
+      <Textarea placeholder="댓글 내용" value={body} onChange={(e) => setBody(e.target.value)} />
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={onSuccess}>
+          취소
+        </Button>
+        <Button onClick={onSubmit} disabled={isPending}>
+          {isPending ? "추가 중..." : "댓글 추가"}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// 로딩 다이얼로그 (재사용 가능)
+function LoadingDialog({ title, message }: { title: string; message: string }) {
+  return (
+    <Dialog open={true}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <div className="text-center py-4">{message}</div>
       </DialogContent>
     </Dialog>
   )
@@ -141,7 +210,7 @@ function EditCommentDialog({
   open: boolean
   onOpenChange: () => void
 }) {
-  const [body, setBody] = useState(comment.body)
+  const { value: body, handleChange } = useInputValue(comment.body)
   const { mutate: updateComment, isPending } = useUpdateCommentMutation()
 
   const handleSubmit = () => {
@@ -164,7 +233,7 @@ function EditCommentDialog({
           <DialogTitle>댓글 수정</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <Textarea placeholder="댓글 내용" value={body} onChange={(e) => setBody(e.target.value)} />
+          <Textarea placeholder="댓글 내용" value={body} onChange={handleChange} />
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={onOpenChange}>
               취소
@@ -179,18 +248,43 @@ function EditCommentDialog({
   )
 }
 
-// 좋아요 버튼 컴포넌트
 function LikeButton({ comment }: { comment: Comment }) {
-  const { mutate: updateLike, isPending } = useUpdateLikeMutation()
+  const queryClient = useQueryClient()
+
+  const { mutate: updateLike, isPending } = useUpdateLikeMutation({
+    onMutate: async (data) => {
+      const previousComments = queryClient.getQueryData(COMMENT_QUERY_KEY.byPost(comment.postId))
+
+      queryClient.setQueryData(COMMENT_QUERY_KEY.byPost(comment.postId), (old: Comment[] | undefined) => {
+        if (!old || !Array.isArray(old)) return old
+        return old.map((c) => (c.id === data.id ? { ...c, likes: data.likes } : c))
+      })
+
+      return { previousComments }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: COMMENT_QUERY_KEY.byPost(comment.postId) })
+    },
+    onError: (error, data, context) => {
+      const typedContext = context as { previousComments: Comment[] } | undefined
+      if (typedContext?.previousComments) {
+        queryClient.setQueryData(COMMENT_QUERY_KEY.byPost(comment.postId), typedContext.previousComments)
+      }
+      console.error("좋아요 업데이트에 실패했습니다:", error)
+    },
+  })
 
   const handleLike = () => {
-    // updateLike({ id: comment.id, postId } })
+    updateLike({
+      id: comment.id,
+      likes: (comment.likes ?? 0) + 1,
+    })
   }
 
   return (
     <Button variant="ghost" size="sm" onClick={handleLike} disabled={isPending}>
       <ThumbsUp className="w-3 h-3" />
-      <span className="ml-1 text-xs">{comment.likes}</span>
+      <span className="ml-1 text-xs">{comment.likes || 0}</span>
     </Button>
   )
 }
