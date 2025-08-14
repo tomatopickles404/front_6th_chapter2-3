@@ -1,3 +1,5 @@
+import { Post } from "entities/post"
+
 export interface PostsParams {
   skip: number
   limit: number
@@ -13,4 +15,10 @@ export interface PostResponse {
   total: number
   skip: number
   limit: number
+}
+
+export interface PostFormData {
+  title: string
+  body: string
+  userId: number
 }

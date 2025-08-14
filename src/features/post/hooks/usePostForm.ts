@@ -1,29 +1,29 @@
-import { ChangeEvent, useState } from "react"
+import { useState } from "react"
+import { Post } from "entities/post"
+import { PostFormData } from "../models"
 
-interface PostForm {
-  id: number
-  title: string
-  body: string
-  userId: number
-}
+export function usePostForm(initialPost?: Post) {
+  const [formData, setFormData] = useState<PostFormData>(
+    initialPost
+      ? {
+          title: initialPost.title,
+          body: initialPost.body,
+          userId: initialPost.userId,
+        }
+      : {
+          title: "",
+          body: "",
+          userId: 1,
+        },
+  )
 
-const initialPost: PostForm = {
-  id: 0,
-  title: "",
-  body: "",
-  userId: 0,
-}
-
-export function usePostForm() {
-  const [post, setPost] = useState<PostForm>(initialPost)
-
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setPost((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+  const updateField = (field: keyof PostFormData, value: string | number) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const resetPost = () => {
-    setPost(initialPost)
+  const resetForm = () => {
+    setFormData({ title: "", body: "", userId: 1 })
   }
 
-  return { post, handleChange, resetPost }
+  return { formData, updateField, resetForm }
 }
