@@ -30,7 +30,7 @@ export function PostTable({
   onTagClick,
 }: PostTableProps) {
   const { data: usersData } = useUsersQuery()
-  const { localPosts, updateReaction, syncPosts, isUpdating } = usePostReaction(posts)
+  const { localPosts, updateReaction, syncPosts, isUpdating } = usePostReaction()
 
   useEffect(() => {
     syncPosts(posts)
