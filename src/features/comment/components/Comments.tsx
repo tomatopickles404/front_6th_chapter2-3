@@ -214,13 +214,15 @@ function EditCommentDialog({
   const { mutate: updateComment, isPending } = useUpdateCommentMutation()
 
   const handleSubmit = () => {
-    if (!body.trim() || body === comment.body) return
-
     updateComment(
       { id: comment.id, body: body.trim() },
       {
         onSuccess: () => {
+          console.log("댓글 수정 성공")
           onOpenChange()
+        },
+        onError: (error) => {
+          console.error("댓글 수정 실패:", error)
         },
       },
     )
