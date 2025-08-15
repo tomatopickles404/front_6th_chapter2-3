@@ -8,9 +8,9 @@ export function UserDialog({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  userId: number | null
+  userId: number
 }) {
-  const { data: user } = useUserQuery(userId || null)
+  const { data: user } = useUserQuery(userId)
   if (!user) return null
 
   const { firstName, lastName, age, email, phone, address, company, image, username } = user

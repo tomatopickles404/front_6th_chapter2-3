@@ -7,20 +7,16 @@ import { useCreateCommentMutation } from "./useCreateCommentMutation"
 export function useCommentManagement() {
   const [body, setBody] = useState("")
   const { postId } = useParams()
-  const { userId, isLoggedIn } = useUserStore()
-  const { data: currentUser, isLoading: isLoadingUser } = useUserQuery(userId)
+  const { userId } = useUserStore()
+  const { data: currentUser, isLoading: isLoadingUser } = useUserQuery(userId!)
   const { mutate: createComment, isPending } = useCreateCommentMutation()
 
-  const canSubmit = body.trim() && currentUser && userId && isLoggedIn
-
   const handleSubmit = () => {
-    if (!canSubmit) return
-
     createComment(
       {
         body: body.trim(),
         postId: Number(postId),
-        userId: userId,
+        userId: userId!,
       },
       {
         onSuccess: () => {
@@ -38,7 +34,6 @@ export function useCommentManagement() {
     currentUser,
     isLoadingUser,
     isPending,
-    canSubmit,
     handleSubmit,
     resetForm,
   }

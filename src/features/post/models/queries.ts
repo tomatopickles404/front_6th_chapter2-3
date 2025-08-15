@@ -22,4 +22,7 @@ export const POST_QUERY_KEY = {
 
   // 게시물 작성자 정보
   author: (userId: number) => [...POST_QUERY_KEY.all, "author", userId],
+
+  // 게시물 반응 업데이트
+  reaction: (postId: number) => [...POST_QUERY_KEY.all, "reaction", postId],
 } as const

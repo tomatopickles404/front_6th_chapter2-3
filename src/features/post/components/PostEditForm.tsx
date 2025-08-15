@@ -1,6 +1,6 @@
 import { Button, Input, Textarea } from "shared/components"
 import { usePostForm } from "../hooks/usePostForm"
-import { PostFormData } from "./PostDialog"
+import { PostFormData } from "../models/types"
 import { Post } from "entities/post"
 
 export function PostEditForm({ post, onSubmit }: { post: Post; onSubmit: (data: PostFormData) => void }) {

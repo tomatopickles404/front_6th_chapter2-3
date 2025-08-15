@@ -1,5 +1,5 @@
 export interface User {
-  id: string
+  id: number
   image: string
   username: string
 }
@@ -7,14 +7,15 @@ export interface User {
 export interface Reaction {
   likes: number
   dislikes: number
+  userReaction?: "like" | "dislike" | null
 }
 
 export interface Post {
   id: number
   title: string
   body: string
-  author: User
+  author?: User
   tags: string[]
-  userId: number
+  userId?: number
   reactions: Reaction
 }

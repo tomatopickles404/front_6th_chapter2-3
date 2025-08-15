@@ -3,12 +3,12 @@ import { Post } from "entities/post"
 import { PostFormData } from "../models"
 
 export function usePostForm(initialPost?: Post) {
-  const [formData, setFormData] = useState<PostFormData>(
+  const [formData, setFormData] = useState<PostFormData>(() =>
     initialPost
       ? {
           title: initialPost.title,
           body: initialPost.body,
-          userId: initialPost.userId,
+          userId: initialPost.userId || 1, // 기본값 제공
         }
       : {
           title: "",

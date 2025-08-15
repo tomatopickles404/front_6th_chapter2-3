@@ -7,8 +7,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { POST_QUERY_KEY } from "features/post/models"
 import { overlay } from "overlay-kit"
 import { useMemo } from "react"
-import { Table } from "shared/components/Table"
-import { useUsersQuery } from "features/user/hooks"
+import { Post } from "entities/post" // Post 타입 import 추가
 
 export default function PostsManager() {
   return (
@@ -59,7 +58,8 @@ function PostsManagerContent() {
     }
   }
 
-  const openEditDialog = async (post: { id: number; title: string; body: string }) => {
+  const openEditDialog = async (post: Post) => {
+    // Post 타입으로 변경
     const fullPost = postsToDisplay.find((p) => p.id === post.id)
     if (fullPost) {
       await overlay.openAsync(({ isOpen, close }) => (

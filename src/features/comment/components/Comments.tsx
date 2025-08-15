@@ -119,7 +119,7 @@ function CommentItem({ comment }: { comment: Comment }) {
   )
 }
 
-// 댓글 추가 다이얼로그 (추상화된 로직 사용)
+// 댓글 추가
 function AddCommentDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const { body, setBody, currentUser, isLoadingUser, isPending, handleSubmit, resetForm } = useCommentManagement()
 
@@ -142,7 +142,7 @@ function AddCommentDialog({ open, onOpenChange }: { open: boolean; onOpenChange:
         <CommentForm
           body={body}
           setBody={setBody}
-          currentUser={currentUser}
+          currentUser={currentUser!}
           isPending={isPending}
           onSubmit={handleSubmit}
           onSuccess={handleSuccess}
@@ -163,7 +163,7 @@ function CommentForm({
 }: {
   body: string
   setBody: (body: string) => void
-  currentUser: User | null
+  currentUser: User
   isPending: boolean
   onSubmit: () => void
   onSuccess: () => void
@@ -265,7 +265,7 @@ function LikeButton({ comment }: { comment: Comment }) {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: COMMENT_QUERY_KEY.byPost(comment.postId) })
     },
-    onError: (error, data, context) => {
+    onError: (error, _, context) => {
       const typedContext = context as { previousComments: Comment[] } | undefined
       if (typedContext?.previousComments) {
         queryClient.setQueryData(COMMENT_QUERY_KEY.byPost(comment.postId), typedContext.previousComments)
