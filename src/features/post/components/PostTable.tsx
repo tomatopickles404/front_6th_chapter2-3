@@ -6,7 +6,7 @@ import { HighlightText } from "shared/components/HighlightText"
 import { useMemo, useEffect } from "react"
 import { usePostReaction } from "../hooks/usePostReaction"
 import { mapPostsWithUsers, getPostTagClassName } from "entities/post/helpers"
-import { getReactionButtonStyle } from "shared/utils/uiUtils"
+import { getReactionButtonStyle } from "shared/utils/styles"
 
 interface PostTableProps {
   posts: Post[]
@@ -32,7 +32,6 @@ export function PostTable({
   const { data: usersData } = useUsersQuery()
   const { localPosts, updateReaction, syncPosts, isUpdating } = usePostReaction(posts)
 
-  // props로 받은 posts가 변경되면 로컬 상태 동기화
   useEffect(() => {
     syncPosts(posts)
   }, [posts, syncPosts])

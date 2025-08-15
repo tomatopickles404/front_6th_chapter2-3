@@ -6,7 +6,6 @@ import { Post } from "entities/post"
 import { PostCreateForm, PostEditForm, PostViewContent } from "features/post"
 import { PostFormData } from "../models/types"
 
-// 통합된 다이얼로그
 export function PostDialog({
   type,
   open,

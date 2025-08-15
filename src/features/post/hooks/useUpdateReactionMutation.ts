@@ -6,7 +6,7 @@ const updatePostReaction = async ({ postId, reaction }: { postId: number; reacti
   return api.patch(apiPath, { reaction })
 }
 
-export function useUpdatePostReactionMutation(
+export function useUpdateReactionMutation(
   options?: UseMutationOptions<unknown, Error, { postId: number; reaction: "like" | "dislike" | null }>,
 ) {
   return useMutation({
