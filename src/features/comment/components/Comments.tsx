@@ -1,54 +1,25 @@
-import { useState, useEffect } from "react"
 import { type Comment } from "entities/comment"
 import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, Textarea } from "shared/components"
 import { overlay } from "overlay-kit"
 import { ThumbsUp, Edit2, Trash2, Plus } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
-import { useCommentsQuery, useUpdateCommentMutation, useUpdateLikeMutation, useDeleteCommentMutation } from "../hooks"
+import { useUpdateCommentMutation, useUpdateLikeMutation, useDeleteCommentMutation, useCommentsQuery } from "../hooks"
 import { COMMENT_QUERY_KEY } from "../models/queries"
 import { useCommentManagement } from "../hooks/useCommentManagement"
 import { User } from "entities/user"
 import { useInputValue } from "shared/hooks"
-
-type CommentsMap = {
-  [postId: number]: Comment[]
-}
+import { useComments } from "../hooks"
 
 export function Comments({ postId }: { postId: number }) {
-  const { data: commentsData, isLoading: isLoadingComments } = useCommentsQuery(postId)
+  const { data: commentsData, isLoading } = useCommentsQuery(postId)
+  const { comments } = useComments({ postId, commentsData: commentsData ?? [] })
 
-  const [comments, setComments] = useState<CommentsMap>({})
-
-  useEffect(() => {
-    if (commentsData) {
-      let filteredComments: Comment[] = []
-
-      if (Array.isArray(commentsData)) {
-        // postId가 일치하는 댓글만 필터링
-        filteredComments = commentsData.filter((comment) => comment.postId === postId)
-      }
-      // commentsData가 객체이고 comments 속성을 가진 경우만 처리
-      else if (commentsData && typeof commentsData === "object" && "comments" in commentsData) {
-        // @ts-expect-error 타입 에러 무시하고 간단하게 처리
-        const rawComments = Array.isArray(commentsData.comments) ? commentsData.comments : []
-        filteredComments = rawComments.filter((comment: Comment) => comment.postId === postId)
-      }
-
-      setComments((prev) => ({
-        ...prev,
-        [postId]: filteredComments,
-      }))
-    }
-  }, [commentsData, postId])
-
-  if (isLoadingComments) return <div>Loading...</div>
-
-  const postComments = comments[postId] || []
+  if (isLoading) return <div>Loading...</div>
 
   return (
     <div className="mt-2">
       <CommentHeader />
-      <CommentList comments={postComments} />
+      <CommentList comments={comments[postId] ?? []} />
     </div>
   )
 }
