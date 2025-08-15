@@ -85,10 +85,6 @@ export function PostTable({
           if (finalReaction === "like") newLikes++
           if (finalReaction === "dislike") newDislikes++
 
-          console.log(
-            `🔄 Local Post ${postId}: ${currentUserReaction} → ${finalReaction}, likes: ${post.reactions.likes} → ${newLikes}, dislikes: ${post.reactions.dislikes} → ${newDislikes}`,
-          )
-
           return {
             ...post,
             reactions: {
@@ -187,7 +183,7 @@ export function PostTable({
                     size="sm"
                     className={getReactionButtonStyle(reactions.userReaction === "like", "like")}
                     onClick={() => handleReactionClick(id, reactions.userReaction || null, "like")}
-                    disabled={updateReactionMutation.isPending}
+                    disabled={false}
                   >
                     <ThumbsUp className="w-4 h-4" />
                     <span>{reactions.likes}</span>
@@ -197,7 +193,7 @@ export function PostTable({
                     size="sm"
                     className={getReactionButtonStyle(reactions.userReaction === "dislike", "dislike")}
                     onClick={() => handleReactionClick(id, reactions.userReaction || null, "dislike")}
-                    disabled={updateReactionMutation.isPending}
+                    disabled={false}
                   >
                     <ThumbsDown className="w-4 h-4" />
                     <span>{reactions.dislikes}</span>
